@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TAL Project Tracker</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#f8f9fb;color:#1a1a1a;font-size:13px}
+::-webkit-scrollbar{height:5px;width:5px}
+::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+.hdr{background:#fff;border-bottom:1px solid #e2e8f0;padding:14px 20px;position:sticky;top:0;z-index:20}
+.hdr h1{font-size:17px;font-weight:700;letter-spacing:-0.02em;display:flex;align-items:center;gap:8px}
+.hdr .bar{width:5px;height:20px;background:linear-gradient(180deg,#f97316,#ec4899);border-radius:2px}
+.bdg{font-size:10px;color:#94a3b8;font-weight:400;background:#f1f5f9;padding:2px 7px;border-radius:6px}
+.sync-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:4px}
+.tabs{padding:10px 20px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;gap:6px;align-items:center;flex-wrap:wrap;position:sticky;top:82px;z-index:19}
+.tb{padding:5px 12px;font-size:12px;font-weight:500;border:none;border-radius:5px;cursor:pointer;font-family:inherit}
+.tb.on{background:#1e293b;color:#fff}.tb:not(.on){background:#f1f5f9;color:#64748b}.tb:not(.on):hover{background:#e2e8f0}
+.fp{padding:3px 9px;font-size:10px;font-weight:500;border:1px solid #e2e8f0;border-radius:10px;cursor:pointer;font-family:inherit;background:#fff;color:#94a3b8}
+.fp.on{color:#fff;border-color:var(--c)}
+.sep{width:1px;height:18px;background:#e2e8f0;margin:0 6px}
+.cnt{padding:14px 20px}
+.btn2{font-size:10px;color:#94a3b8;background:none;border:1px solid #e2e8f0;border-radius:4px;padding:3px 8px;cursor:pointer;font-family:inherit}.btn2:hover{background:#f1f5f9}
+.rg{display:grid;grid-template-columns:repeat(auto-fill,minmax(370px,1fr));gap:12px;margin-bottom:16px}
+.rc{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px}
+.rc.risk{border-left:3px solid #ef4444}.rc.slip{border-left:3px solid #f59e0b}
+.rch{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.rcd{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.rcn{font-size:13px;font-weight:600;flex:1}
+.rcr{font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px}
+.rbt{height:6px;background:#f1f5f9;border-radius:3px;margin-bottom:8px;overflow:hidden}
+.rbf{height:100%;border-radius:3px;transition:width .3s}
+.rt{font-size:11px;line-height:1.9}
+.rti{display:grid;grid-template-columns:8px 1fr auto;gap:6px;align-items:center;padding:1px 0}
+.rti .d{width:6px;height:6px;border-radius:50%}
+.rti .n{color:#475569;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rti .tg{font-size:10px;white-space:nowrap;font-weight:500}
+.rti.over .n{color:#ef4444;font-weight:500}
+.rti.slip .n{color:#f59e0b;font-weight:500}
+.rti.dn .n{color:#94a3b8;text-decoration:line-through}
+.rp{margin-top:10px;padding-top:8px;border-top:1px solid #f1f5f9;font-size:11px;color:#64748b;line-height:1.6}
+.rp b{color:#1e293b}
+.ob{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;margin-bottom:14px;font-size:12px;color:#991b1b;line-height:1.7}.ob b{color:#7f1d1d}
+.sb{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;margin-bottom:14px;font-size:12px;color:#92400e;line-height:1.7}.sb b{color:#78350f}
+.wg{background:#fff;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:14px;overflow:hidden}
+.wh{padding:8px 14px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:8px}
+.wh .d{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+.wh .nm{font-size:12px;font-weight:600}
+.wh .ct{font-size:10px;color:#94a3b8}
+.ab{margin-left:auto;font-size:10px;color:#3b82f6;background:none;border:1px solid #dbeafe;border-radius:4px;padding:2px 8px;cursor:pointer;font-family:inherit;font-weight:500}.ab:hover{background:#eff6ff}
+table.tt{width:100%;border-collapse:collapse}
+table.tt th{font-size:9px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;padding:5px 8px;text-align:left;background:#fafbfc;border-bottom:1px solid #f1f5f9;white-space:nowrap}
+table.tt td{padding:5px 8px;border-bottom:1px solid #f8f9fa;vertical-align:middle;font-size:12px}
+table.tt tr:hover td{background:#f0f4ff}
+table.tt tr.blk td{background:#fffbeb}
+table.tt tr.over td{background:#fef2f2}
+table.tt tr.slip td{background:#fffbeb}
+.ec{cursor:text;padding:2px 4px;border-radius:3px;min-height:16px}.ec:hover{background:#e8ecf1}.ec.ph{color:#c8cdd3}
+.ei{border:1.5px solid #3b82f6;border-radius:3px;padding:2px 5px;font-size:12px;font-family:inherit;outline:none;width:100%;background:#fff}
+.sp{cursor:pointer;user-select:none;border-radius:99px;padding:2px 8px;font-size:10px;font-weight:600;display:inline-block;white-space:nowrap}.sp:hover{opacity:.8}
+.dl{opacity:0;font-size:9px;color:#ef4444;background:none;border:none;cursor:pointer;padding:2px}
+tr:hover .dl{opacity:1}
+.tlc{width:140px;min-width:140px}
+.tlt{height:16px;background:#f1f5f9;border-radius:3px;position:relative;overflow:visible}
+.tlbar{position:absolute;height:100%;border-radius:3px}
+.tltdy{position:absolute;top:-2px;bottom:-2px;width:1.5px;background:#ef4444;opacity:.5;z-index:2}
+.tltgt{position:absolute;top:-3px;width:2px;height:22px;background:#1e293b;border-radius:1px;z-index:3}
+.tl-meta{display:flex;justify-content:space-between;margin-top:3px;font-size:9px;gap:4px}
+.tl-meta .dt{color:#94a3b8;white-space:nowrap}
+.tl-meta .warn{color:#f59e0b;font-weight:600;white-space:nowrap}
+.tl-meta .late{color:#ef4444;font-weight:600;white-space:nowrap}
+.qr{display:grid;grid-template-columns:70px 1.2fr 90px 1.5fr 80px 26px;padding:8px 14px;border-bottom:1px solid #f8f9fa;align-items:start;gap:6px}.qr:hover{background:#f0f4ff}
+.at{font-size:9px;font-weight:600;padding:2px 6px;border-radius:3px;display:inline-block}
+.aq{margin:10px 14px;font-size:11px;color:#3b82f6;background:none;border:1px dashed #bfdbfe;border-radius:5px;padding:6px;cursor:pointer;font-family:inherit;width:calc(100% - 28px);text-align:center}.aq:hover{background:#eff6ff}
+.setup-banner{max-width:640px;margin:60px auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:32px;font-size:13px;line-height:1.8}
+.setup-banner h2{font-size:16px;margin-bottom:12px}
+.setup-banner code{background:#f1f5f9;padding:2px 6px;border-radius:3px;font-size:12px}
+.setup-banner pre{background:#1e293b;color:#e2e8f0;padding:14px;border-radius:6px;font-size:11px;overflow-x:auto;margin:10px 0;line-height:1.6}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ┌──────────────────────────────────────────────────────────┐
+// │  SUPABASE CONFIG — Fill these before deploying           │
+// │                                                          │
+// │  1. Create project at https://supabase.com               │
+// │  2. Run the SQL in the setup guide to create the table   │
+// │  3. Paste your URL and anon key below                    │
+// └──────────────────────────────────────────────────────────┘
+const SUPABASE_URL = 'https://piiddlpimruzgtbarcdi.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBpaWRkbHBpbXJ1emd0YmFyY2RpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NTg3NjYsImV4cCI6MjA5NDIzNDc2Nn0.44IAWQ4wilCeP2E5lWRbW_rDiERavQKB2e4FphHZSS4';
+const TABLE = 'tracker_data';
+const ROW_ID = 1;
+
+// ── Show setup guide if not configured ──
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  document.getElementById('app').innerHTML = '<div class="setup-banner">' +
+    '<h2>🔧 One-time Supabase setup (10 minutes)</h2>' +
+    '<p>This tracker uses <b>Supabase</b> (free tier) so everyone on the team sees the same data in real-time.</p>' +
+    '<p><b>Step 1:</b> Create a free project at <a href="https://supabase.com" target="_blank">supabase.com</a></p>' +
+    '<p><b>Step 2:</b> Go to <b>SQL Editor</b> in your dashboard and run:</p>' +
+    '<pre>' +
+    '-- Create the table\n' +
+    'create table tracker_data (\n' +
+    '  id int primary key,\n' +
+    '  content jsonb not null default \'{}\'::jsonb,\n' +
+    '  updated_at timestamptz default now()\n' +
+    ');\n\n' +
+    '-- Seed with empty row\n' +
+    'insert into tracker_data (id, content)\n' +
+    'values (1, \'{}\'::jsonb);\n\n' +
+    '-- Enable real-time\n' +
+    'alter publication supabase_realtime\n' +
+    '  add table tracker_data;\n\n' +
+    '-- Allow read/write via anon key\n' +
+    'alter table tracker_data enable row level security;\n\n' +
+    'create policy "Allow all access"\n' +
+    '  on tracker_data for all\n' +
+    '  using (true)\n' +
+    '  with check (true);' +
+    '</pre>' +
+    '<p><b>Step 3:</b> Go to <b>Settings → API</b>. Copy your <b>Project URL</b> and <b>anon/public key</b>.</p>' +
+    '<p><b>Step 4:</b> Open this HTML file and paste into the two lines at the top of the script:</p>' +
+    '<pre>' +
+    "const SUPABASE_URL = 'https://your-project.supabase.co';\n" +
+    "const SUPABASE_KEY = 'your-anon-key-here';" +
+    '</pre>' +
+    '<p><b>Step 5:</b> Reload. Done. Share the URL — everyone sees the same data in real-time.</p>' +
+    '<p style="margin-top:16px;color:#64748b;font-size:11px">Free tier: 500MB DB, 5GB bandwidth, unlimited API requests, real-time subs.</p>' +
+    '</div>';
+  throw new Error('Supabase not configured — setup guide shown.');
+}
+
+// ── Supabase REST API (no SDK — works in any iframe/sandbox) ──
+const SB_REST = SUPABASE_URL + '/rest/v1/' + TABLE;
+const SB_HEADERS = {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'};
+
+async function sbRead(){
+  var r=await fetch(SB_REST+'?id=eq.'+ROW_ID+'&select=content',{headers:SB_HEADERS});
+  if(!r.ok)throw new Error(r.status+' '+r.statusText);
+  var d=await r.json();
+  return d&&d[0]?d[0]:null;
+}
+async function sbWrite(content){
+  var r=await fetch(SB_REST+'?id=eq.'+ROW_ID,{method:'PATCH',headers:Object.assign({},SB_HEADERS,{'Prefer':'return=minimal'}),body:JSON.stringify({content:content,updated_at:new Date().toISOString()})});
+  if(!r.ok)throw new Error(r.status+' '+r.statusText);
+}
+
+// ── Constants ──
+const ST=["Not Started","In Progress","Done","Blocked"];
+const SC={"Not Started":"#94a3b8","In Progress":"#3b82f6",Done:"#22c55e",Blocked:"#ef4444"};
+const WC={Benchmarking:"#f97316","Red Teaming":"#ec4899",Monitoring:"#3b82f6","Coding Agent":"#10b981",Product:"#8b5cf6","GTM & Sales":"#eab308",Compliance:"#a855f7",Outreach:"#6b7280",Corrector:"#06b6d4"};
+const AC2={Legal:{b:"#fef2f2",f:"#dc2626"},Commercial:{b:"#fefce8",f:"#ca8a04"},Infra:{b:"#f0fdf4",f:"#16a34a"},Product:{b:"#eff6ff",f:"#2563eb"},GTM:{b:"#f3f4f6",f:"#6b7280"}};
+const TD=new Date("2026-05-13T00:00:00"),GS=new Date("2026-04-13T00:00:00"),GE=new Date("2026-11-02T00:00:00");
+function pc(d){return Math.max(0,Math.min(100,(d-GS)/(GE-GS)*100))}
+function tD(s){return new Date(s+"T00:00:00")}
+function fD(s){const d=tD(s),m=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];return d.getDate()+" "+m[d.getMonth()]}
+function dD(a,b){return Math.round((b-a)/864e5)}
+function es(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+function fmtTime(iso){if(!iso)return"—";const d=new Date(iso),ms=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],h=d.getHours(),mn=String(d.getMinutes()).padStart(2,"0");return d.getDate()+" "+ms[d.getMonth()]+", "+(h%12||12)+":"+mn+" "+(h>=12?"PM":"AM")}
+
+const MODS=[
+  {n:"Red Teaming & Intruder",ws:["Red Teaming"],i:"🔴"},
+  {n:"Benchmarking & Evaluator",ws:["Benchmarking"],i:"📊"},
+  {n:"Runtime Monitoring",ws:["Monitoring"],i:"🛡️"},
+  {n:"Corrector",ws:["Corrector"],i:"🔧"},
+  {n:"Coding Agent Audit",ws:["Coding Agent"],i:"💻"},
+  {n:"Product & Platform",ws:["Product"],i:"🏗️"},
+  {n:"GTM & Commercial",ws:["GTM & Sales","Outreach"],i:"🚀"},
+  {n:"Compliance & Infra",ws:["Compliance"],i:"🔒"},
+];
+
+const DT=[
+  {id:"B1",ws:"Benchmarking",task:"Neural Processes + Bandit algo (chatbot)",owner:"Aritra",start:"2026-05-20",end:"2026-06-10",target:"2026-06-10",status:"Not Started",notes:"Talk to Dhruman/Rushil"},
+  {id:"B2",ws:"Benchmarking",task:"Agentic env synthetic generation",owner:"Aritra",start:"2026-06-11",end:"2026-07-15",target:"2026-07-15",status:"Not Started",notes:"Extend to agentic"},
+  {id:"B3",ws:"Benchmarking",task:"Side-by-side model comparison UI",owner:"Aritra",start:"2026-07-01",end:"2026-07-31",target:"2026-07-31",status:"Not Started",notes:"Customer-facing"},
+  {id:"R1",ws:"Red Teaming",task:"13-category seed bank + replay",owner:"Debayan",start:"2026-05-01",end:"2026-05-10",target:"2026-05-10",status:"Done",notes:""},
+  {id:"R2",ws:"Red Teaming",task:"LinUCB + UCB1 + TAP + PAIR/GOAT",owner:"Debayan / Bhavesh",start:"2026-05-01",end:"2026-05-30",target:"2026-05-30",status:"In Progress",notes:"Online + evolutionary algos"},
+  {id:"R3",ws:"Red Teaming",task:"SFT dataset collection & eval",owner:"Bhavesh",start:"2026-05-11",end:"2026-05-18",target:"2026-05-18",status:"In Progress",notes:"Existing attacks for DeepSeek"},
+  {id:"R4",ws:"Red Teaming",task:"SFT on DeepSeek + sparsity check",owner:"Bhavesh / Aritra",start:"2026-05-18",end:"2026-05-26",target:"2026-05-26",status:"Not Started",notes:"Then decide on RL"},
+  {id:"R5",ws:"Red Teaming",task:"RL decision + training",owner:"Debayan / Aritra",start:"2026-05-27",end:"2026-06-15",target:"2026-06-15",status:"Not Started",notes:"POMDP, rewards"},
+  {id:"R6",ws:"Red Teaming",task:"Meta evolver + turn-position bandit",owner:"Debayan",start:"2026-05-15",end:"2026-06-15",target:"2026-06-15",status:"Not Started",notes:"Test 1 month"},
+  {id:"R7",ws:"Red Teaming",task:"OWASP LLM Top 10 mapping",owner:"Bhavesh",start:"2026-05-20",end:"2026-06-05",target:"2026-06-05",status:"Not Started",notes:"Connect to OWASP"},
+  {id:"R8",ws:"Red Teaming",task:"OWASP Agentic Top 10 methodology",owner:"Debayan",start:"2026-06-01",end:"2026-08-30",target:"2026-08-30",status:"Not Started",notes:"First publication Q3"},
+  {id:"M1",ws:"Monitoring",task:"Bonsai 8B SFT monitor (offline)",owner:"Aritra",start:"2026-04-15",end:"2026-05-15",target:"2026-05-15",status:"Done",notes:"Built"},
+  {id:"M2",ws:"Monitoring",task:"Baseline model comparison eval",owner:"Bhavesh",start:"2026-05-11",end:"2026-05-25",target:"2026-05-25",status:"In Progress",notes:"Llama, Mistral, Gemma, Phi-4"},
+  {id:"M3",ws:"Monitoring",task:"Token-level streaming (~60ms)",owner:"Aritra",start:"2026-04-15",end:"2026-05-15",target:"2026-05-15",status:"Done",notes:"10 categories live"},
+  {id:"M4",ws:"Monitoring",task:"Expand streaming categories",owner:"Aritra / Bhavesh",start:"2026-05-15",end:"2026-06-30",target:"2026-06-30",status:"In Progress",notes:"Beyond 10"},
+  {id:"M5",ws:"Monitoring",task:"Policy Classifier — Gemma 4B",owner:"Aritra",start:"2026-05-11",end:"2026-05-18",target:"2026-05-18",status:"In Progress",notes:"Dataset + eval + model"},
+  {id:"M6",ws:"Monitoring",task:"Policy Classifier — generator",owner:"Aritra",start:"2026-05-19",end:"2026-06-01",target:"2026-06-01",status:"Not Started",notes:"Adversarial game"},
+  {id:"M7",ws:"Monitoring",task:"Customer dashboard v0",owner:"Dhruv",start:"2026-05-15",end:"2026-06-30",target:"2026-06-30",status:"In Progress",notes:"TAL-hosted portal"},
+  {id:"C1",ws:"Coding Agent",task:"Harness (red team / bench / monitor)",owner:"Nitin",start:"2026-05-05",end:"2026-05-15",target:"2026-05-15",status:"Done",notes:"Ready"},
+  {id:"C2",ws:"Coding Agent",task:"Router + attacker training",owner:"Nitin",start:"2026-05-15",end:"2026-05-26",target:"2026-05-26",status:"In Progress",notes:"First layer dataset"},
+  {id:"C3",ws:"Coding Agent",task:"Test agent on custom models",owner:"Nitin",start:"2026-05-26",end:"2026-06-10",target:"2026-06-10",status:"Not Started",notes:"Target May 26"},
+  {id:"C4",ws:"Coding Agent",task:"Policy engine (5 layers)",owner:"Nitin",start:"2026-06-01",end:"2026-07-15",target:"2026-07-15",status:"Not Started",notes:"Pre-flight, data, tool, output, workflow"},
+  {id:"C5",ws:"Coding Agent",task:"Hooks/plugin for Copilot, Cursor",owner:"Nitin",start:"2026-06-15",end:"2026-07-15",target:"2026-07-15",status:"Not Started",notes:"SDK integration"},
+  {id:"P1",ws:"Product",task:"API endpoint (text/voice)",owner:"Dhruv",start:"2026-05-01",end:"2026-05-20",target:"2026-05-20",status:"In Progress",notes:"Customer→TAL endpoint"},
+  {id:"P2",ws:"Product",task:"Monitoring dashboard v0",owner:"Dhruv",start:"2026-05-15",end:"2026-06-30",target:"2026-06-30",status:"In Progress",notes:"§3.4 metrics"},
+  {id:"P3",ws:"Product",task:"Audit report template",owner:"Vansh",start:"2026-05-20",end:"2026-06-15",target:"2026-06-15",status:"Not Started",notes:"Exec summary + visual proof"},
+  {id:"P4",ws:"Product",task:"Trust Score methodology",owner:"Debayan / Dhruv",start:"2026-06-01",end:"2026-07-31",target:"2026-07-31",status:"Not Started",notes:"Board-level metric"},
+  {id:"P5",ws:"Product",task:"ABA product (Adversarial Budget)",owner:"Debayan",start:"2026-06-15",end:"2026-08-15",target:"2026-08-15",status:"Not Started",notes:"Fixed-budget audit"},
+  {id:"P6",ws:"Product",task:"Discovery module (AI inventory)",owner:"Dhruv",start:"2026-08-01",end:"2026-10-31",target:"2026-10-31",status:"Not Started",notes:"V1 roadmap"},
+  {id:"CO1",ws:"Corrector",task:"Remediation guidance engine — design",owner:"Vansh",start:"2026-06-01",end:"2026-06-30",target:"2026-06-30",status:"Not Started",notes:"Prioritised fix recommendations"},
+  {id:"CO2",ws:"Corrector",task:"Corrector report template",owner:"Vansh",start:"2026-06-15",end:"2026-07-15",target:"2026-07-15",status:"Not Started",notes:"Actionable steps per vuln class"},
+  {id:"CO3",ws:"Corrector",task:"Integration with audit output",owner:"Vansh / Aritra",start:"2026-07-01",end:"2026-07-31",target:"2026-07-31",status:"Not Started",notes:"Auto-generate from red teaming"},
+  {id:"G1",ws:"GTM & Sales",task:"⚠ NDA template — legal review",owner:"Bikram / Legal",start:"2026-05-13",end:"2026-05-25",target:"2026-05-25",status:"Not Started",notes:"BLOCKER"},
+  {id:"G2",ws:"GTM & Sales",task:"⚠ SoW template — legal review",owner:"Bikram / Legal",start:"2026-05-13",end:"2026-05-30",target:"2026-05-30",status:"Not Started",notes:"Module 1 + 2"},
+  {id:"G3",ws:"GTM & Sales",task:"⚠ Pricing — Module 1 & 2",owner:"Bikram",start:"2026-05-13",end:"2026-05-30",target:"2026-05-30",status:"Not Started",notes:"Before commercial conv"},
+  {id:"G4",ws:"GTM & Sales",task:"External CXO deck",owner:"Himani",start:"2026-05-20",end:"2026-06-05",target:"2026-06-05",status:"Not Started",notes:"Stage 1 briefings"},
+  {id:"G5",ws:"GTM & Sales",task:"V0 design partners (ongoing)",owner:"Bikram",start:"2026-05-01",end:"2026-07-31",target:"2026-07-31",status:"In Progress",notes:"Edtech, OTA, fintech"},
+  {id:"G6",ws:"GTM & Sales",task:"Reference call consent",owner:"Bikram",start:"2026-06-01",end:"2026-06-30",target:"2026-06-30",status:"Not Started",notes:"Need explicit consent"},
+  {id:"G7",ws:"GTM & Sales",task:"Competitor analysis & demo calls",owner:"Himani",start:"2026-05-20",end:"2026-06-30",target:"2026-06-30",status:"Not Started",notes:"Virtue, Cranium, Mindgard, Splx"},
+  {id:"G8",ws:"GTM & Sales",task:"GTM doc maintenance",owner:"Himani",start:"2026-05-13",end:"2026-07-31",target:"2026-07-31",status:"In Progress",notes:"Keep doc synced"},
+  {id:"X1",ws:"Compliance",task:"⚠ Cloud provider decision",owner:"Dhruv",start:"2026-05-13",end:"2026-05-25",target:"2026-05-25",status:"Not Started",notes:"BLOCKER: India residency"},
+  {id:"X2",ws:"Compliance",task:"India data residency setup",owner:"Dhruv",start:"2026-05-25",end:"2026-06-15",target:"2026-06-15",status:"Not Started",notes:"DPDP"},
+  {id:"X3",ws:"Compliance",task:"⚠ Data retention policy",owner:"Dhruv",start:"2026-05-13",end:"2026-05-30",target:"2026-05-30",status:"Not Started",notes:"Logs, duration, access"},
+  {id:"X4",ws:"Compliance",task:"SOC 2 Type II kickoff",owner:"TBD",start:"2026-06-01",end:"2026-12-31",target:"2026-12-31",status:"Not Started",notes:"BFSI hard req"},
+  {id:"X5",ws:"Compliance",task:"ISO 27001 decision",owner:"TBD",start:"2026-06-01",end:"2026-06-30",target:"2026-06-30",status:"Not Started",notes:"After SOC 2?"},
+  {id:"X6",ws:"Compliance",task:"On-prem / VPC roadmap",owner:"Dhruv",start:"2026-06-15",end:"2026-07-31",target:"2026-07-31",status:"Not Started",notes:"BFSI needs"},
+  {id:"X7",ws:"Compliance",task:"⚠ Liability & indemnification",owner:"Legal",start:"2026-05-20",end:"2026-06-15",target:"2026-06-15",status:"Not Started",notes:"Red teaming risk"},
+  {id:"O1",ws:"Outreach",task:"TPEC — Prof. Ravindran",owner:"Debayan",start:"2026-05-15",end:"2026-06-30",target:"2026-06-30",status:"Not Started",notes:"CRITICAL Q2"},
+  {id:"O2",ws:"Outreach",task:"MeitY — audit infrastructure",owner:"Debayan",start:"2026-05-15",end:"2026-07-31",target:"2026-07-31",status:"Not Started",notes:"AI Incident DB"},
+  {id:"O3",ws:"Outreach",task:"RBI FinTech — FREE-AI mapping",owner:"Bikram",start:"2026-06-01",end:"2026-07-31",target:"2026-07-31",status:"Not Started",notes:"Audit→RBI framework"},
+  {id:"O4",ws:"Outreach",task:"Agentic audit publication",owner:"Debayan",start:"2026-06-01",end:"2026-08-30",target:"2026-08-30",status:"Not Started",notes:"Q3 2026"},
+  {id:"O5",ws:"Outreach",task:"NASSCOM ATLF speaking",owner:"Bikram",start:"2026-07-01",end:"2026-09-30",target:"2026-09-30",status:"Not Started",notes:"Sponsor if budget"},
+];
+const DQ=[
+  {id:1,area:"Product",q:"What does benchmarking score against?",owner:"Tech Team",answer:"",status:"Open"},
+  {id:2,area:"Infra",q:"Cloud provider — AWS / GCP / Azure?",owner:"Dhruv",answer:"",status:"Open"},
+  {id:3,area:"Infra",q:"Data retention — logs, duration, access?",owner:"Dhruv",answer:"",status:"Open"},
+  {id:4,area:"Infra",q:"SOC 2 Type II — owner + timeline?",owner:"TBD",answer:"",status:"Open"},
+  {id:5,area:"Infra",q:"ISO 27001 — alongside or after SOC 2?",owner:"TBD",answer:"",status:"Open"},
+  {id:6,area:"Infra",q:"On-prem / VPC roadmap?",owner:"Dhruv",answer:"",status:"Open"},
+  {id:7,area:"Product",q:"Dashboard metrics (§3.4): live vs aspirational?",owner:"Tech Team",answer:"",status:"Open"},
+  {id:8,area:"Product",q:"Alert thresholds: Critical vs High vs Medium?",owner:"Tech Team",answer:"",status:"Open"},
+  {id:9,area:"Product",q:"Drift detection baseline methodology?",owner:"Aritra",answer:"",status:"Open"},
+  {id:10,area:"Legal",q:"NDA template — draft needed",owner:"Legal / Bikram",answer:"",status:"Open"},
+  {id:11,area:"Legal",q:"SoW template — project + subscription",owner:"Legal / Bikram",answer:"",status:"Open"},
+  {id:12,area:"Legal",q:"Liability cap for red teaming disruption?",owner:"Legal",answer:"",status:"Open"},
+  {id:13,area:"Commercial",q:"Pricing for Module 1 and Module 2",owner:"Bikram",answer:"",status:"Open"},
+  {id:14,area:"Commercial",q:"Payment terms — 50/50? Monthly?",owner:"Bikram",answer:"",status:"Open"},
+  {id:15,area:"Product",q:"Corrector scope — auto or guidance only?",owner:"Vansh / Debayan",answer:"",status:"Open"},
+  {id:16,area:"GTM",q:"Competitor pricing via demo calls",owner:"Himani",answer:"",status:"Open"},
+];
+
+// ── State ──
+let S={tasks:[],questions:[],meta:{lastEdited:null,editedBy:""}};
+let tab="readiness",filt="All",userName="",syncStatus="connecting";
+const LS_KEY="tal-v5-offline",US_KEY="tal-v5-user";
+let _saving=false,_pendingSave=null;
+
+function isOd(t){return t.status!=="Done"&&dD(tD(t.end),TD)>0}
+function isSl(t){return t.status!=="Done"&&tD(t.end)>tD(t.target)}
+function flg(t){if(t.status==="Done")return"done";if(isOd(t))return"over";if(isSl(t))return"slip";return"ok"}
+
+// ── Storage: Supabase primary, localStorage fallback ──
+function lsSave(){try{localStorage.setItem(LS_KEY,JSON.stringify(S))}catch{}}
+function lsLoad(){try{const r=localStorage.getItem(LS_KEY);if(r)return JSON.parse(r)}catch{}return null}
+
+async function ld(){
+  try{userName=localStorage.getItem(US_KEY)||""}catch{}
+  var ni=document.getElementById("user-name");if(ni)ni.value=userName;
+  try{
+    var row=await sbRead();
+    if(row&&row.content&&row.content.tasks){
+      S=row.content;
+      lsSave();
+      syncStatus="connected";updateSyncBadge();return;
+    }
+  }catch(e){console.warn('Supabase read failed:',e.message)}
+  var cached=lsLoad();
+  if(cached&&cached.tasks){S=cached;syncStatus="offline";updateSyncBadge();return}
+  S={tasks:JSON.parse(JSON.stringify(DT)),questions:JSON.parse(JSON.stringify(DQ)),meta:{lastEdited:new Date().toISOString(),editedBy:"System"}};
+  await sv();
+}
+
+async function sv(){
+  S.meta=S.meta||{};
+  S.meta.lastEdited=new Date().toISOString();
+  S.meta.editedBy=userName||"Unknown";
+  lsSave();updateMeta();
+  if(_saving){_pendingSave=true;return}
+  _saving=true;
+  try{
+    await sbWrite(S);
+    syncStatus="connected";
+  }catch(e){console.warn('Supabase write failed:',e.message);syncStatus="offline"}
+  updateSyncBadge();_saving=false;
+  if(_pendingSave){_pendingSave=false;await sv()}
+}
+
+// ── Real-time sync via polling (no WebSocket — works in any sandbox) ──
+var _pollTimer=null;
+function startPolling(){
+  if(_pollTimer)return;
+  _pollTimer=setInterval(async function(){
+    try{
+      var row=await sbRead();
+      if(!row||!row.content||!row.content.meta)return;
+      var remote=row.content;
+      // Only update if remote is newer than local
+      var remoteTime=new Date(remote.meta.lastEdited||0).getTime();
+      var localTime=new Date(S.meta&&S.meta.lastEdited||0).getTime();
+      if(remoteTime>localTime+1000){
+        S=remote;lsSave();syncStatus="connected";
+        updateSyncBadge();updateMeta();RR();flashSync();
+      }
+    }catch(e){syncStatus="offline";updateSyncBadge()}
+  },8000); // poll every 8 seconds
+}
+
+function flashSync(){var el=document.getElementById("meta-ts");if(!el)return;el.style.color="#8b5cf6";setTimeout(function(){el.style.color="#94a3b8"},800)}
+function updateSyncBadge(){var el=document.getElementById("sync-badge");if(!el)return;var c=syncStatus==="connected"?"#22c55e":syncStatus==="offline"?"#ef4444":"#f59e0b";var t=syncStatus==="connected"?"● Synced":syncStatus==="offline"?"Offline — local only":"Connecting...";el.innerHTML='<span class="sync-dot" style="background:'+c+'"></span>'+t}
+function updateMeta(){var el=document.getElementById("meta-ts");if(!el)return;if(S.meta&&S.meta.lastEdited){el.innerHTML='Last saved: <b style="color:#475569">'+fmtTime(S.meta.lastEdited)+'</b> by <b style="color:#475569">'+es(S.meta.editedBy||"—")+'</b>'}else{el.innerHTML="No edits yet"}}
+function setUser(v){userName=v.trim();try{localStorage.setItem(US_KEY,userName)}catch{}}
+async function refresh(){await ld();RR();updateMeta();var el=document.getElementById("meta-ts");if(el){el.style.color="#2563eb";setTimeout(function(){el.style.color="#94a3b8"},600)}}
+async function rst(){if(!confirm("Reset ALL data for EVERYONE?"))return;S={tasks:JSON.parse(JSON.stringify(DT)),questions:JSON.parse(JSON.stringify(DQ)),meta:{lastEdited:new Date().toISOString(),editedBy:userName||"System"}};await sv();RR()}
+async function rebaseline(){var count=0;var startFixed=0;var today=new Date().toISOString().slice(0,10);S.tasks.forEach(function(t){if(t.status==="Done")return;if(t.end!==t.target){t.target=t.end;count++}if(t.status==="Not Started"){t.start=today;startFixed++}});if(count===0&&startFixed===0){alert("Nothing to rebaseline — all targets already match ETAs.");return}if(!confirm("This will:\n• Set Target = current ETA for "+count+" task(s)\n• Set Start = today for "+startFixed+" Not Started task(s)\n\nAll task names, owners, notes, and statuses stay exactly as they are.\n\nProceed?"))return;await sv();RR();alert("Done — "+count+" target(s) + "+startFixed+" start date(s) rebaselined.\nAny future ETA changes from here will show as slips.")}
+
+// ── Actions ──
+function cy(id){var t=S.tasks.find(function(x){return x.id===id});if(!t)return;t.status=ST[(ST.indexOf(t.status)+1)%ST.length];sv();RR()}
+function cq(id){var q=S.questions.find(function(x){return x.id===id});if(!q)return;var o=["Open","Answered","Deferred"];q.status=o[(o.indexOf(q.status)+1)%o.length];sv();RR()}
+function dT(id){if(!confirm("Delete "+id+"?"))return;S.tasks=S.tasks.filter(function(t){return t.id!==id});sv();RR()}
+function dQ(id){S.questions=S.questions.filter(function(q){return q.id!==id});sv();RR()}
+function aT(ws,pfx){var nums=S.tasks.filter(function(t){return t.ws===ws}).map(function(t){return parseInt(t.id.replace(/\D/g,""))||0});var d="2026-06-15";S.tasks.push({id:pfx+(Math.max.apply(null,[0].concat(nums))+1),ws:ws,task:"New task",owner:"TBD",start:"2026-05-20",end:d,target:d,status:"Not Started",notes:""});sv();RR()}
+function aQ(){var mx=Math.max.apply(null,[0].concat(S.questions.map(function(q){return q.id})));S.questions.push({id:mx+1,area:"Product",q:"New question",owner:"TBD",answer:"",status:"Open"});sv();RR()}
+
+function ie(el,id,f){var t=S.tasks.find(function(x){return x.id===id});if(!t)return;el.innerHTML='<input class="ei" value="'+es(t[f]||"")+'" onblur="ce(this,\''+id+"','"+f+'\')" onkeydown="if(event.key===\'Enter\')this.blur()">';el.querySelector("input").focus();el.querySelector("input").select()}
+function de(el,id,f){var t=S.tasks.find(function(x){return x.id===id});if(!t)return;el.innerHTML='<input type="date" class="ei" value="'+t[f]+'" onblur="ce(this,\''+id+"','"+f+'\')" onkeydown="if(event.key===\'Enter\')this.blur()" style="width:130px">';el.querySelector("input").focus()}
+function ce(inp,id,f){var t=S.tasks.find(function(x){return x.id===id});if(!t)return;var v=inp.value.trim();if(f==="id")t.id=v||t.id;else t[f]=v;sv();RR()}
+function iqe(el,id,f){var q=S.questions.find(function(x){return x.id===id});if(!q)return;if(f==="answer"){el.innerHTML='<textarea class="ei" rows="2" onblur="cqe(this,'+id+",'"+f+"')\">" +es(q[f]||"")+"</textarea>"}else if(f==="area"){el.innerHTML='<select class="ei" onchange="cqe(this,'+id+",'area')\">" +["Product","Infra","Legal","Commercial","GTM"].map(function(a){return"<option"+(a===q.area?" selected":"")+">"+a+"</option>"}).join("")+"</select>"}else{el.innerHTML='<input class="ei" value="'+es(q[f]||"")+'" onblur="cqe(this,'+id+",'"+f+'\')" onkeydown="if(event.key===\'Enter\')this.blur()">'}var i=el.querySelector("input,textarea,select");if(i){i.focus();if(i.select)i.select()}}
+function cqe(inp,id,f){var q=S.questions.find(function(x){return x.id===id});if(!q)return;q[f]=inp.value.trim();sv();RR()}
+
+// ── Render ──
+function RR(){rTabs();var c=document.getElementById("cnt");if(!c)return;if(tab==="readiness")rReady(c);else if(tab==="tasks")rTasks(c);else rQs(c)}
+
+function rTabs(){
+  var oq=S.questions.filter(function(q){return q.status==="Open"}).length;
+  var od=S.tasks.filter(isOd).length;
+  var sl=S.tasks.filter(function(t){return!isOd(t)&&isSl(t)}).length;
+  var h='<button class="tb '+(tab==="readiness"?"on":"")+'" onclick="tab=\'readiness\';RR()">📋 Readiness';
+  if(od)h+=' <span style="background:#fef2f2;color:#ef4444;padding:1px 5px;border-radius:8px;font-size:9px">'+od+' overdue</span>';
+  if(sl)h+=' <span style="background:#fffbeb;color:#f59e0b;padding:1px 5px;border-radius:8px;font-size:9px">'+sl+' slipping</span>';
+  h+='</button>';
+  h+='<button class="tb '+(tab==="tasks"?"on":"")+'" onclick="tab=\'tasks\';RR()">📝 All Tasks</button>';
+  h+='<button class="tb '+(tab==="questions"?"on":"")+'" onclick="tab=\'questions\';RR()">❓ Questions ('+oq+')</button>';
+  if(tab==="tasks"){h+='<div class="sep"></div>';var ws=[];S.tasks.forEach(function(t){if(ws.indexOf(t.ws)<0)ws.push(t.ws)});h+='<span class="fp '+(filt==="All"?"on":"")+'" style="--c:#1e293b;'+(filt==="All"?"background:#1e293b;color:#fff":"")+'" onclick="filt=\'All\';RR()">All</span>';ws.forEach(function(w){var c=WC[w]||"#6b7280";h+='<span class="fp '+(filt===w?"on":"")+'" style="--c:'+c+';'+(filt===w?"background:"+c+";color:#fff":"")+'" onclick="filt=\''+w.replace(/'/g,"\\'")+'\';RR()">'+w+'</span>'})}
+  document.getElementById("tabs").innerHTML=h;
+}
+
+function rReady(el){
+  var overdue=S.tasks.filter(isOd);var slipping=S.tasks.filter(function(t){return!isOd(t)&&isSl(t)});var h="";
+  if(overdue.length){h+='<div class="ob"><b>⚠️ '+overdue.length+' past due</b><br>';overdue.forEach(function(t){h+='• <b>'+es(t.id)+'</b> '+es(t.task)+' — target was '+fD(t.target)+', '+dD(tD(t.target),TD)+'d late ('+es(t.owner)+')<br>'});h+='</div>'}
+  if(slipping.length){h+='<div class="sb"><b>⏳ '+slipping.length+' slipping</b><br>';slipping.forEach(function(t){h+='• <b>'+es(t.id)+'</b> '+es(t.task)+' — target '+fD(t.target)+', ETA '+fD(t.end)+' ('+dD(tD(t.target),tD(t.end))+'d slip, '+es(t.owner)+')<br>'});h+='</div>'}
+  h+='<div class="rg">';
+  MODS.forEach(function(mod){
+    var tasks=S.tasks.filter(function(t){return mod.ws.indexOf(t.ws)>=0});if(!tasks.length)return;
+    var done=tasks.filter(function(t){return t.status==="Done"}).length,total=tasks.length,pctD=total?Math.round(done/total*100):0;
+    var od=tasks.filter(isOd),sl=tasks.filter(function(t){return!isOd(t)&&isSl(t)});
+    var upcoming=tasks.filter(function(t){return t.status!=="Done"}).sort(function(a,b){return tD(a.target)-tD(b.target)});
+    var fullBy=upcoming.length?fD(upcoming[upcoming.length-1].target):"—";
+    var rl,rb,rf;
+    if(pctD===100){rl="✓ Ready";rb="#dcfce7";rf="#16a34a"}
+    else if(od.length){rl="⚠ Overdue";rb="#fef2f2";rf="#ef4444"}
+    else if(sl.length){rl="⏳ Slipping";rb="#fffbeb";rf="#f59e0b"}
+    else if(tasks.some(function(t){return t.status==="In Progress"})){rl="Building";rb="#dbeafe";rf="#2563eb"}
+    else{rl="Planned";rb="#f1f5f9";rf="#64748b"}
+    var c=WC[mod.ws[0]]||"#6b7280";
+    var sorted=[].concat(od,sl,tasks.filter(function(t){return t.status==="In Progress"&&od.indexOf(t)<0&&sl.indexOf(t)<0}),tasks.filter(function(t){return t.status==="Not Started"&&od.indexOf(t)<0&&sl.indexOf(t)<0}),tasks.filter(function(t){return t.status==="Done"}));
+    var dn=tasks.filter(function(t){return t.status==="Done"});
+    h+='<div class="rc '+(od.length?"risk":sl.length?"slip":"")+'"><div class="rch"><div class="rcd" style="background:'+c+'"></div><span class="rcn">'+mod.i+' '+mod.n+'</span><span class="rcr" style="background:'+rb+';color:'+rf+'">'+rl+'</span></div>';
+    h+='<div class="rbt"><div class="rbf" style="width:'+pctD+'%;background:'+c+'"></div></div>';
+    h+='<div style="display:flex;justify-content:space-between;font-size:10px;color:#94a3b8;margin-bottom:6px"><span>'+done+'/'+total+' done ('+pctD+'%)</span>'+(od.length?'<span style="color:#ef4444;font-weight:600">'+od.length+' overdue</span>':sl.length?'<span style="color:#f59e0b;font-weight:600">'+sl.length+' slipping</span>':"")+'</div>';
+    h+='<div class="rt">';
+    sorted.forEach(function(t){var f=flg(t),clr=f==="over"?"#ef4444":f==="slip"?"#f59e0b":f==="done"?"#94a3b8":"#475569";var dtxt=f==="done"?"✓ Done":f==="over"?dD(tD(t.target),TD)+"d overdue":f==="slip"?"ETA "+fD(t.end):"target "+fD(t.target);h+='<div class="rti '+(f==="over"?"over":f==="slip"?"slip":f==="done"?"dn":"")+'"><div class="d" style="background:'+SC[t.status]+'"></div><span class="n">'+es(t.task)+'</span><span class="tg" style="color:'+clr+'">'+dtxt+'</span></div>'});
+    h+='</div><div class="rp">';
+    if(dn.length)h+='<b>Can demo today:</b> '+dn.map(function(t){return es(t.task)}).join(", ")+'.<br>';
+    if(upcoming.length){h+='<b>Committed dates:</b><br>';upcoming.forEach(function(t){var f=flg(t);var warn=f==="over"?' <span style="color:#ef4444">⚠ '+dD(tD(t.target),TD)+'d overdue</span>':f==="slip"?' <span style="color:#f59e0b">⏳ ETA '+fD(t.end)+'</span>':"";h+='&nbsp;&nbsp;• '+es(t.task)+' → <b>'+fD(t.target)+'</b>'+warn+'<br>'});h+='<b>Full capability target: '+fullBy+'</b>'}
+    h+='</div></div>';
+  });
+  h+='</div>';el.innerHTML=h;
+}
+
+function rTasks(el){
+  var fl=filt==="All"?S.tasks:S.tasks.filter(function(t){return t.ws===filt});var gr={};fl.forEach(function(t){(gr[t.ws]=gr[t.ws]||[]).push(t)});
+  var tp=pc(TD);var h="";
+  for(var ws in gr){
+    var items=gr[ws];var c=WC[ws]||"#6b7280",done=items.filter(function(t){return t.status==="Done"}).length,pfx=items[0]&&items[0].id?items[0].id.replace(/\d+$/,""):"T";
+    h+='<div class="wg"><div class="wh"><div class="d" style="background:'+c+'"></div><span class="nm">'+ws+'</span><span class="ct">'+done+'/'+items.length+'</span><button class="ab" onclick="aT(\''+ws.replace(/'/g,"\\'")+'\',\''+pfx+'\')">+ Add</button></div>';
+    h+='<table class="tt"><thead><tr><th style="width:22px"></th><th>ID</th><th style="min-width:140px">Task</th><th>Owner</th><th>Status</th><th style="width:75px">Target</th><th style="width:140px">Timeline</th><th>Notes</th></tr></thead><tbody>';
+    items.forEach(function(t){
+      var f=flg(t),s=tD(t.start),e=tD(t.end),tgt=tD(t.target);
+      var l=pc(s),r=pc(e),w=Math.max(.8,r-l),tgtPc=pc(tgt);
+      var op=t.status==="Done"?.35:t.status==="Not Started"?.2:.8;
+      var cls=f==="over"?"over":f==="slip"?"slip":t.task.indexOf("⚠")>=0?"blk":"";
+      h+='<tr class="'+cls+'"><td><button class="dl" onclick="dT(\''+t.id+'\')">✕</button></td>';
+      h+='<td><span class="ec" ondblclick="ie(this,\''+t.id+'\',\'id\')">'+es(t.id)+'</span></td>';
+      h+='<td><span class="ec" ondblclick="ie(this,\''+t.id+'\',\'task\')">'+es(t.task)+'</span></td>';
+      h+='<td><span class="ec" ondblclick="ie(this,\''+t.id+'\',\'owner\')">'+es(t.owner)+'</span></td>';
+      h+='<td><span class="sp" onclick="cy(\''+t.id+'\')" style="background:'+SC[t.status]+'18;color:'+SC[t.status]+'">'+t.status+'</span></td>';
+      h+='<td><span class="ec" ondblclick="de(this,\''+t.id+'\',\'target\')" style="font-weight:600;color:'+(f==="over"?"#ef4444":f==="slip"?"#f59e0b":"#1e293b")+'">'+fD(t.target)+'</span></td>';
+      h+='<td class="tlc"><div class="tlt"><div class="tltdy" style="left:'+tp+'%"></div>';
+      h+='<div class="tlbar" style="left:'+l+'%;width:'+w+'%;background:'+(isSl(t)?"linear-gradient(90deg,"+c+",#f59e0b)":c)+';opacity:'+op+'"></div>';
+      if(t.status!=="Done")h+='<div class="tltgt" style="left:'+tgtPc+'%" title="Target: '+fD(t.target)+'"></div>';
+      h+='</div><div class="tl-meta"><span class="dt" ondblclick="de(this,\''+t.id+'\',\'start\')">'+fD(t.start)+'</span>';
+      if(f==="over")h+='<span class="late">'+dD(tD(t.target),TD)+'d late</span>';
+      else if(f==="slip")h+='<span class="warn">ETA→'+fD(t.end)+'</span>';
+      h+='<span class="dt" ondblclick="de(this,\''+t.id+'\',\'end\')">'+fD(t.end)+'</span></div></td>';
+      h+='<td><span class="ec '+(t.notes?"":"ph")+'" ondblclick="ie(this,\''+t.id+'\',\'notes\')">'+(t.notes||"...")+'</span></td></tr>';
+    });
+    h+='</tbody></table></div>';
+  }
+  h+='<div style="font-size:10px;color:#94a3b8;padding:6px 0;line-height:1.8"><b>Target</b> = committed date. <b>Start/End</b> = current estimate. Double-click to edit. Click status to cycle.<br><span style="display:inline-block;width:10px;height:10px;background:#1e293b;border-radius:1px;vertical-align:middle"></span> = Target marker.</div>';
+  el.innerHTML=h;
+}
+
+function rQs(el){
+  var oq=S.questions.filter(function(q){return q.status==="Open"}).length;
+  var h='<div class="wg"><div class="wh"><div class="d" style="background:#ef4444"></div><span class="nm">Open Questions</span><span class="ct">'+oq+' open</span></div>';
+  h+='<div style="display:grid;grid-template-columns:70px 1.2fr 90px 1.5fr 80px 26px;padding:5px 14px;font-size:9px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;background:#fafbfc;border-bottom:1px solid #f1f5f9"><span>Area</span><span>Question</span><span>Owner</span><span>Answer</span><span>Status</span><span></span></div>';
+  S.questions.forEach(function(q){
+    var a=AC2[q.area]||{b:"#f3f4f6",f:"#6b7280"},sc=q.status==="Open"?"#ef4444":q.status==="Answered"?"#22c55e":"#94a3b8";
+    h+='<div class="qr"><span class="at" style="background:'+a.b+';color:'+a.f+'" ondblclick="iqe(this,'+q.id+',\'area\')">'+es(q.area)+'</span>';
+    h+='<span class="ec" ondblclick="iqe(this,'+q.id+',\'q\')" style="font-size:12px">'+es(q.q)+'</span>';
+    h+='<span class="ec" ondblclick="iqe(this,'+q.id+',\'owner\')" style="font-size:12px;color:#64748b">'+es(q.owner)+'</span>';
+    h+='<span class="ec '+(q.answer?"":"ph")+'" ondblclick="iqe(this,'+q.id+',\'answer\')" style="font-size:12px">'+(q.answer||"double-click...")+'</span>';
+    h+='<span class="sp" onclick="cq('+q.id+')" style="background:'+sc+'18;color:'+sc+'">'+q.status+'</span>';
+    h+='<button class="dl" onclick="dQ('+q.id+')" style="opacity:.3">✕</button></div>';
+  });
+  h+='<button class="aq" onclick="aQ()">+ Add question</button></div>';el.innerHTML=h;
+}
+
+// ── Build shell and boot ──
+document.getElementById('app').innerHTML=
+'<div class="hdr">'+
+'<div style="display:flex;align-items:center;justify-content:space-between">'+
+'<h1><span class="bar"></span>TAL Project Tracker<span class="bdg">v0.5 · Supabase</span></h1>'+
+'<div style="display:flex;gap:6px;align-items:center">'+
+'<button class="btn2" onclick="rebaseline()" style="background:#fffbeb;border-color:#fde68a;color:#d97706;font-weight:600">⚑ Rebaseline</button>'+
+'<button class="btn2" onclick="refresh()" style="background:#eff6ff;border-color:#bfdbfe;color:#2563eb;font-weight:600">↻ Refresh</button>'+
+'<button class="btn2" onclick="rst()" style="color:#ef4444">Reset</button>'+
+'</div></div>'+
+'<div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;font-size:11px;color:#94a3b8">'+
+'<div style="display:flex;align-items:center;gap:12px">'+
+'<span id="sync-badge"><span class="sync-dot" style="background:#f59e0b"></span>Connecting...</span>'+
+'<span id="meta-ts">—</span>'+
+'</div>'+
+'<div style="display:flex;align-items:center;gap:5px">'+
+'<span style="font-size:10px;color:#b0b8c4">Editing as:</span>'+
+'<input id="user-name" type="text" placeholder="Your name" value="" style="border:1px solid #e2e8f0;border-radius:4px;padding:2px 8px;font-size:11px;font-family:inherit;width:120px;color:#1e293b;outline:none;background:#fafbfc" onchange="setUser(this.value)" onfocus="this.style.borderColor=\'#3b82f6\'" onblur="this.style.borderColor=\'#e2e8f0\'">'+
+'</div></div></div>'+
+'<div class="tabs" id="tabs"></div>'+
+'<div class="cnt" id="cnt"><div style="padding:40px;color:#94a3b8">Connecting to Supabase...</div></div>';
+
+(async function(){
+  await ld();
+  var ni=document.getElementById("user-name");if(ni)ni.value=userName;
+  startPolling();
+  updateMeta();
+  RR();
+})();
+</script>
+</body>
+</html>
