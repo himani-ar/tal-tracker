@@ -260,6 +260,80 @@ function flg(t){if(t.status==="Done")return"done";if(isOd(t))return"over";if(isS
 function lsSave(){try{localStorage.setItem(LS_KEY,JSON.stringify(S))}catch{}}
 function lsLoad(){try{const r=localStorage.getItem(LS_KEY);if(r)return JSON.parse(r)}catch{}return null}
 
+// ── Backup system ──
+var SB_BACKUPS=SUPABASE_URL+'/rest/v1/tracker_backups';
+var _lastBackupTime=0;
+var BACKUP_THROTTLE=60000; // 1 backup per minute max
+
+async function sbCreateBackup(content,who){
+  var now=Date.now();
+  if(now-_lastBackupTime<BACKUP_THROTTLE)return; // throttle
+  _lastBackupTime=now;
+  try{
+    await fetch(SB_BACKUPS,{method:'POST',headers:SB_HEADERS,body:JSON.stringify({content:content,saved_by:who||"Unknown"})});
+  }catch(e){console.warn('Backup failed:',e.message)}
+}
+
+async function sbListBackups(limit){
+  var r=await fetch(SB_BACKUPS+'?select=id,saved_by,created_at&order=created_at.desc&limit='+(limit||20),{headers:SB_HEADERS});
+  if(!r.ok)throw new Error(r.status);
+  return await r.json();
+}
+
+async function sbGetBackup(id){
+  var r=await fetch(SB_BACKUPS+'?id=eq.'+id+'&select=content,saved_by,created_at',{headers:SB_HEADERS});
+  if(!r.ok)throw new Error(r.status);
+  var d=await r.json();
+  return d&&d[0]?d[0]:null;
+}
+
+async function showRestorePanel(){
+  tab="restore";
+  var el=document.getElementById("cnt");
+  el.innerHTML='<div style="padding:40px;color:#94a3b8;text-align:center">Loading backups...</div>';
+  try{
+    var backups=await sbListBackups(30);
+    if(!backups||!backups.length){el.innerHTML='<div style="padding:40px;color:#94a3b8;text-align:center">No backups found.</div>';return}
+    var h='<div class="wg"><div class="wh"><div class="d" style="background:#3b82f6"></div><span class="nm">Point-in-Time Recovery</span><span class="ct">'+backups.length+' snapshots</span></div>';
+    h+='<div style="padding:10px 14px;font-size:11px;color:#64748b;background:#f0f4ff;border-bottom:1px solid #e2e8f0">Each row is a snapshot taken before a save. Click <b>Restore</b> to roll back to that point. Current data will be backed up first.</div>';
+    h+='<table class="tt"><thead><tr><th>Time</th><th>Saved by</th><th>ID</th><th></th></tr></thead><tbody>';
+    backups.forEach(function(b){
+      var d=new Date(b.created_at);
+      var ms=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      var timeStr=d.getDate()+" "+ms[d.getMonth()]+" "+d.getFullYear()+", "+(d.getHours()%12||12)+":"+String(d.getMinutes()).padStart(2,"0")+" "+(d.getHours()>=12?"PM":"AM");
+      h+='<tr><td style="font-weight:500">'+timeStr+'</td>';
+      h+='<td>'+es(b.saved_by||"—")+'</td>';
+      h+='<td style="color:#94a3b8;font-size:11px">#'+b.id+'</td>';
+      h+='<td><button onclick="restoreBackup('+b.id+')" style="padding:3px 10px;font-size:10px;font-weight:600;background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;border-radius:4px;cursor:pointer;font-family:inherit">Restore</button></td></tr>';
+    });
+    h+='</tbody></table></div>';
+    h+='<div style="font-size:10px;color:#94a3b8;padding:8px 0">Backups are created automatically before every save (max 1 per minute). Click Restore to roll back — your current data is backed up first.</div>';
+    el.innerHTML=h;
+  }catch(e){el.innerHTML='<div style="padding:40px;color:#ef4444;text-align:center">Failed to load backups: '+es(e.message)+'</div>'}
+}
+
+async function restoreBackup(id){
+  if(!confirm("Restore backup #"+id+"?\n\nYour current data will be backed up first, then replaced with the selected snapshot."))return;
+  try{
+    // Backup current state first
+    _lastBackupTime=0; // force backup
+    await sbCreateBackup(S,userName+" (pre-restore)");
+    // Fetch the backup
+    var backup=await sbGetBackup(id);
+    if(!backup||!backup.content||!backup.content.tasks){alert("Backup is empty or corrupt.");return}
+    // Restore
+    S=backup.content;
+    S.meta=S.meta||{};
+    S.meta.lastEdited=new Date().toISOString();
+    S.meta.editedBy=(userName||"Unknown")+" (restored #"+id+")";
+    await sbWrite(S);
+    lsSave();
+    syncStatus="connected";updateSyncBadge();updateMeta();
+    tab="tasks";RR();
+    alert("Restored from backup #"+id+" ("+es(backup.saved_by)+", "+new Date(backup.created_at).toLocaleString()+").\n\nYour previous state was backed up first.");
+  }catch(e){alert("Restore failed: "+e.message)}
+}
+
 async function ld(){
   try{userName=localStorage.getItem(US_KEY)||""}catch{}
   var ni=document.getElementById("user-name");if(ni)ni.value=userName;
@@ -300,6 +374,8 @@ async function sv(){
   if(_saving){_pendingSave=true;return}
   _saving=true;
   try{
+    // Snapshot current state before overwriting
+    await sbCreateBackup(S,userName||"Unknown");
     await sbWrite(S);
     syncStatus="connected";
   }catch(e){console.warn('Supabase write failed:',e.message);syncStatus="offline"}
@@ -454,6 +530,7 @@ document.getElementById('app').innerHTML=
 '<div style="display:flex;align-items:center;justify-content:space-between">'+
 '<h1><span class="bar"></span>TAL Project Tracker<span class="bdg">v0.5 · Supabase</span></h1>'+
 '<div style="display:flex;gap:6px;align-items:center">'+
+'<button class="btn2" onclick="showRestorePanel()" style="background:#f0f4ff;border-color:#bfdbfe;color:#3b82f6;font-weight:600">⏪ Restore</button>'+
 '<button class="btn2" onclick="rebaseline()" style="background:#fffbeb;border-color:#fde68a;color:#d97706;font-weight:600">⚑ Rebaseline</button>'+
 '<button class="btn2" onclick="refresh()" style="background:#eff6ff;border-color:#bfdbfe;color:#2563eb;font-weight:600">↻ Refresh</button>'+
 '<button class="btn2" onclick="rst()" style="color:#ef4444">Reset</button>'+
