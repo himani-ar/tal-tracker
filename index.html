@@ -263,18 +263,33 @@ function lsLoad(){try{const r=localStorage.getItem(LS_KEY);if(r)return JSON.pars
 async function ld(){
   try{userName=localStorage.getItem(US_KEY)||""}catch{}
   var ni=document.getElementById("user-name");if(ni)ni.value=userName;
+  // 1. Try Supabase (source of truth)
   try{
     var row=await sbRead();
     if(row&&row.content&&row.content.tasks){
       S=row.content;
-      lsSave();
+      lsSave(); // backup locally
       syncStatus="connected";updateSyncBadge();return;
     }
   }catch(e){console.warn('Supabase read failed:',e.message)}
+  // 2. Supabase failed — try localStorage cache
   var cached=lsLoad();
-  if(cached&&cached.tasks){S=cached;syncStatus="offline";updateSyncBadge();return}
-  S={tasks:JSON.parse(JSON.stringify(DT)),questions:JSON.parse(JSON.stringify(DQ)),meta:{lastEdited:new Date().toISOString(),editedBy:"System"}};
-  await sv();
+  if(cached&&cached.tasks){
+    S=cached;
+    syncStatus="offline";updateSyncBadge();return;
+  }
+  // 3. Both failed — show error, do NOT load defaults, do NOT write to Supabase
+  syncStatus="offline";updateSyncBadge();
+  document.getElementById("cnt").innerHTML=
+    '<div style="max-width:500px;margin:60px auto;background:#fff;border:1px solid #fecaca;border-radius:10px;padding:28px;text-align:center">'+
+    '<div style="font-size:24px;margin-bottom:12px">⚠️</div>'+
+    '<div style="font-size:14px;font-weight:600;color:#991b1b;margin-bottom:8px">Unable to load tracker data</div>'+
+    '<div style="font-size:12px;color:#64748b;line-height:1.6;margin-bottom:16px">'+
+    'Could not reach the database and no local cache was found.<br>'+
+    'This usually means you\'re on a new browser/device or your network is down.</div>'+
+    '<button onclick="location.reload()" style="padding:8px 20px;font-size:12px;font-weight:600;background:#1e293b;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit">↻ Retry</button>'+
+    '</div>';
+  throw new Error('Both Supabase and localStorage empty — waiting for retry');
 }
 
 async function sv(){
@@ -316,9 +331,9 @@ function flashSync(){var el=document.getElementById("meta-ts");if(!el)return;el.
 function updateSyncBadge(){var el=document.getElementById("sync-badge");if(!el)return;var c=syncStatus==="connected"?"#22c55e":syncStatus==="offline"?"#ef4444":"#f59e0b";var t=syncStatus==="connected"?"● Synced":syncStatus==="offline"?"Offline — local only":"Connecting...";el.innerHTML='<span class="sync-dot" style="background:'+c+'"></span>'+t}
 function updateMeta(){var el=document.getElementById("meta-ts");if(!el)return;if(S.meta&&S.meta.lastEdited){el.innerHTML='Last saved: <b style="color:#475569">'+fmtTime(S.meta.lastEdited)+'</b> by <b style="color:#475569">'+es(S.meta.editedBy||"—")+'</b>'}else{el.innerHTML="No edits yet"}}
 function setUser(v){userName=v.trim();try{localStorage.setItem(US_KEY,userName)}catch{}}
-async function refresh(){await ld();RR();updateMeta();var el=document.getElementById("meta-ts");if(el){el.style.color="#2563eb";setTimeout(function(){el.style.color="#94a3b8"},600)}}
-async function rst(){if(!confirm("Reset ALL data for EVERYONE?"))return;S={tasks:JSON.parse(JSON.stringify(DT)),questions:JSON.parse(JSON.stringify(DQ)),meta:{lastEdited:new Date().toISOString(),editedBy:userName||"System"}};await sv();RR()}
-async function rebaseline(){var count=0;var startFixed=0;var today=new Date().toISOString().slice(0,10);S.tasks.forEach(function(t){if(t.status==="Done")return;if(t.end!==t.target){t.target=t.end;count++}if(t.status==="Not Started"){t.start=today;startFixed++}});if(count===0&&startFixed===0){alert("Nothing to rebaseline — all targets already match ETAs.");return}if(!confirm("This will:\n• Set Target = current ETA for "+count+" task(s)\n• Set Start = today for "+startFixed+" Not Started task(s)\n\nAll task names, owners, notes, and statuses stay exactly as they are.\n\nProceed?"))return;await sv();RR();alert("Done — "+count+" target(s) + "+startFixed+" start date(s) rebaselined.\nAny future ETA changes from here will show as slips.")}
+async function refresh(){try{await ld();RR();updateMeta();var el=document.getElementById("meta-ts");if(el){el.style.color="#2563eb";setTimeout(function(){el.style.color="#94a3b8"},600)}}catch(e){console.warn('Refresh failed:',e.message)}}
+async function rst(){var v=prompt("This will PERMANENTLY delete all tasks and notes for EVERYONE and replace with factory defaults.\n\nType RESET to confirm:");if(v!=="RESET")return;S={tasks:JSON.parse(JSON.stringify(DT)),questions:JSON.parse(JSON.stringify(DQ)),meta:{lastEdited:new Date().toISOString(),editedBy:userName||"System"}};await sv();RR()}
+async function rebaseline(){var count=0;var details=[];S.tasks.forEach(function(t){if(t.status==="Done")return;if(t.end!==t.target){details.push(t.id+" : target "+t.target+" → "+t.end);t.target=t.end;count++}});if(count===0){alert("Nothing to rebaseline — all targets already match ETAs.");return}if(!confirm("This will set Target = current ETA for "+count+" task(s):\n\n"+details.join("\n")+"\n\nOnly the Target field changes. Start dates, end dates, names, owners, notes, statuses — all untouched.\n\nProceed?"))return;await sv();RR();alert("Done — "+count+" target(s) rebaselined.\nAny future ETA changes from here will show as slips.")}
 
 // ── Actions ──
 function cy(id){var t=S.tasks.find(function(x){return x.id===id});if(!t)return;t.status=ST[(ST.indexOf(t.status)+1)%ST.length];sv();RR()}
@@ -456,11 +471,13 @@ document.getElementById('app').innerHTML=
 '<div class="cnt" id="cnt"><div style="padding:40px;color:#94a3b8">Connecting to Supabase...</div></div>';
 
 (async function(){
-  await ld();
-  var ni=document.getElementById("user-name");if(ni)ni.value=userName;
-  startPolling();
-  updateMeta();
-  RR();
+  try{
+    await ld();
+    var ni=document.getElementById("user-name");if(ni)ni.value=userName;
+    startPolling();
+    updateMeta();
+    RR();
+  }catch(e){console.warn('Boot stopped:',e.message)}
 })();
 </script>
 </body>
