@@ -154,7 +154,8 @@ const ST=["Not Started","In Progress","Done","Blocked"];
 const SC={"Not Started":"#94a3b8","In Progress":"#3b82f6",Done:"#22c55e",Blocked:"#ef4444"};
 const WC={Benchmarking:"#f97316","Red Teaming":"#ec4899",Monitoring:"#3b82f6","Coding Agent":"#10b981",Product:"#8b5cf6","GTM & Sales":"#eab308",Compliance:"#a855f7",Outreach:"#6b7280",Corrector:"#06b6d4"};
 const AC2={Legal:{b:"#fef2f2",f:"#dc2626"},Commercial:{b:"#fefce8",f:"#ca8a04"},Infra:{b:"#f0fdf4",f:"#16a34a"},Product:{b:"#eff6ff",f:"#2563eb"},GTM:{b:"#f3f4f6",f:"#6b7280"}};
-const TD=new Date("2026-05-13T00:00:00"),GS=new Date("2026-04-13T00:00:00"),GE=new Date("2026-11-02T00:00:00");
+var TD=new Date();TD.setHours(0,0,0,0);
+const GS=new Date("2026-04-13T00:00:00"),GE=new Date("2026-11-02T00:00:00");
 function pc(d){return Math.max(0,Math.min(100,(d-GS)/(GE-GS)*100))}
 function tD(s){return new Date(s+"T00:00:00")}
 function fD(s){const d=tD(s),m=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];return d.getDate()+" "+m[d.getMonth()]}
@@ -409,7 +410,7 @@ function updateMeta(){var el=document.getElementById("meta-ts");if(!el)return;if
 function setUser(v){userName=v.trim();try{localStorage.setItem(US_KEY,userName)}catch{}}
 async function refresh(){try{await ld();RR();updateMeta();var el=document.getElementById("meta-ts");if(el){el.style.color="#2563eb";setTimeout(function(){el.style.color="#94a3b8"},600)}}catch(e){console.warn('Refresh failed:',e.message)}}
 async function rst(){var v=prompt("This will PERMANENTLY delete all tasks and notes for EVERYONE and replace with factory defaults.\n\nType RESET to confirm:");if(v!=="RESET")return;S={tasks:JSON.parse(JSON.stringify(DT)),questions:JSON.parse(JSON.stringify(DQ)),meta:{lastEdited:new Date().toISOString(),editedBy:userName||"System"}};await sv();RR()}
-async function rebaseline(){var count=0;var details=[];S.tasks.forEach(function(t){if(t.status==="Done")return;if(t.end!==t.target){details.push(t.id+" : target "+t.target+" → "+t.end);t.target=t.end;count++}});if(count===0){alert("Nothing to rebaseline — all targets already match ETAs.");return}if(!confirm("This will set Target = current ETA for "+count+" task(s):\n\n"+details.join("\n")+"\n\nOnly the Target field changes. Start dates, end dates, names, owners, notes, statuses — all untouched.\n\nProceed?"))return;await sv();RR();alert("Done — "+count+" target(s) rebaselined.\nAny future ETA changes from here will show as slips.")}
+async function rebaseline(){var count=0;var details=[];S.tasks.forEach(function(t){if(t.status==="Done")return;if(t.end!==t.target){details.push(t.id+" : ETA "+t.end+" → "+t.target);t.end=t.target;count++}});if(count===0){alert("Nothing to rebaseline — all ETAs already match targets.");return}if(!confirm("This will sync ETA to match Target for "+count+" task(s):\n\n"+details.join("\n")+"\n\nOnly the ETA (end date) changes to match the Target you set. Target dates, start dates, names, owners, notes, statuses — all untouched.\n\nProceed?"))return;await sv();RR();alert("Done — "+count+" ETA(s) synced to targets.\nAny future ETA drift past Target will show as slipping.")}
 
 // ── Actions ──
 function cy(id){var t=S.tasks.find(function(x){return x.id===id});if(!t)return;t.status=ST[(ST.indexOf(t.status)+1)%ST.length];sv();RR()}
@@ -421,7 +422,7 @@ function aQ(){var mx=Math.max.apply(null,[0].concat(S.questions.map(function(q){
 
 function ie(el,id,f){var t=S.tasks.find(function(x){return x.id===id});if(!t)return;el.innerHTML='<input class="ei" value="'+es(t[f]||"")+'" onblur="ce(this,\''+id+"','"+f+'\')" onkeydown="if(event.key===\'Enter\')this.blur()">';el.querySelector("input").focus();el.querySelector("input").select()}
 function de(el,id,f){var t=S.tasks.find(function(x){return x.id===id});if(!t)return;el.innerHTML='<input type="date" class="ei" value="'+t[f]+'" onblur="ce(this,\''+id+"','"+f+'\')" onkeydown="if(event.key===\'Enter\')this.blur()" style="width:130px">';el.querySelector("input").focus()}
-function ce(inp,id,f){var t=S.tasks.find(function(x){return x.id===id});if(!t)return;var v=inp.value.trim();if(f==="id")t.id=v||t.id;else t[f]=v;sv();RR()}
+function ce(inp,id,f){var t=S.tasks.find(function(x){return x.id===id});if(!t)return;var v=inp.value.trim();if(f==="id")t.id=v||t.id;else t[f]=v;if(f==="target"){t.end=t.target}sv();RR()}
 function iqe(el,id,f){var q=S.questions.find(function(x){return x.id===id});if(!q)return;if(f==="answer"){el.innerHTML='<textarea class="ei" rows="2" onblur="cqe(this,'+id+",'"+f+"')\">" +es(q[f]||"")+"</textarea>"}else if(f==="area"){el.innerHTML='<select class="ei" onchange="cqe(this,'+id+",'area')\">" +["Product","Infra","Legal","Commercial","GTM"].map(function(a){return"<option"+(a===q.area?" selected":"")+">"+a+"</option>"}).join("")+"</select>"}else{el.innerHTML='<input class="ei" value="'+es(q[f]||"")+'" onblur="cqe(this,'+id+",'"+f+'\')" onkeydown="if(event.key===\'Enter\')this.blur()">'}var i=el.querySelector("input,textarea,select");if(i){i.focus();if(i.select)i.select()}}
 function cqe(inp,id,f){var q=S.questions.find(function(x){return x.id===id});if(!q)return;q[f]=inp.value.trim();sv();RR()}
 
@@ -532,8 +533,6 @@ document.getElementById('app').innerHTML=
 '<div style="display:flex;gap:6px;align-items:center">'+
 '<button class="btn2" onclick="showRestorePanel()" style="background:#f0f4ff;border-color:#bfdbfe;color:#3b82f6;font-weight:600">⏪ Restore</button>'+
 '<button class="btn2" onclick="rebaseline()" style="background:#fffbeb;border-color:#fde68a;color:#d97706;font-weight:600">⚑ Rebaseline</button>'+
-'<button class="btn2" onclick="refresh()" style="background:#eff6ff;border-color:#bfdbfe;color:#2563eb;font-weight:600">↻ Refresh</button>'+
-'<button class="btn2" onclick="rst()" style="color:#ef4444">Reset</button>'+
 '</div></div>'+
 '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;font-size:11px;color:#94a3b8">'+
 '<div style="display:flex;align-items:center;gap:12px">'+
