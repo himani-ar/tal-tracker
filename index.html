@@ -418,6 +418,30 @@ function cq(id){var q=S.questions.find(function(x){return x.id===id});if(!q)retu
 function dT(id){if(!confirm("Delete "+id+"?"))return;S.tasks=S.tasks.filter(function(t){return t.id!==id});sv();RR()}
 function dQ(id){S.questions=S.questions.filter(function(q){return q.id!==id});sv();RR()}
 function aT(ws,pfx){var nums=S.tasks.filter(function(t){return t.ws===ws}).map(function(t){return parseInt(t.id.replace(/\D/g,""))||0});var d="2026-06-15";S.tasks.push({id:pfx+(Math.max.apply(null,[0].concat(nums))+1),ws:ws,task:"New task",owner:"TBD",start:"2026-05-20",end:d,target:d,status:"Not Started",notes:""});sv();RR()}
+
+var SECTION_COLORS=["#f97316","#ec4899","#3b82f6","#10b981","#8b5cf6","#eab308","#a855f7","#6b7280","#06b6d4","#ef4444","#14b8a6","#f43f5e","#84cc16","#0ea5e9","#d946ef","#fb923c"];
+function addSection(){
+  var name=prompt("New section name (e.g. Evaluation, Discovery, Infrastructure):");
+  if(!name||!name.trim())return;
+  name=name.trim();
+  // Check if section already exists
+  var existing=S.tasks.some(function(t){return t.ws===name});
+  if(existing){alert("Section '"+name+"' already exists. Use the + Add button inside it to add tasks.");return}
+  // Generate prefix from name (first 2 chars uppercase)
+  var pfx=name.replace(/[^A-Za-z]/g,"").substring(0,2).toUpperCase();
+  if(!pfx)pfx="XX";
+  // Pick a color not already used
+  var usedColors=Object.values(WC);
+  var color=SECTION_COLORS.find(function(c){return usedColors.indexOf(c)<0})||SECTION_COLORS[Math.floor(Math.random()*SECTION_COLORS.length)];
+  WC[name]=color;
+  // Add 3 starter tasks
+  var d="2026-06-30";
+  var today=new Date().toISOString().slice(0,10);
+  S.tasks.push({id:pfx+"1",ws:name,task:"Task 1",owner:"TBD",start:today,end:d,target:d,status:"Not Started",notes:""});
+  S.tasks.push({id:pfx+"2",ws:name,task:"Task 2",owner:"TBD",start:today,end:d,target:d,status:"Not Started",notes:""});
+  S.tasks.push({id:pfx+"3",ws:name,task:"Task 3",owner:"TBD",start:today,end:d,target:d,status:"Not Started",notes:""});
+  sv();RR();
+}
 function aQ(){var mx=Math.max.apply(null,[0].concat(S.questions.map(function(q){return q.id})));S.questions.push({id:mx+1,area:"Product",q:"New question",owner:"TBD",answer:"",status:"Open"});sv();RR()}
 
 function ie(el,id,f){var t=S.tasks.find(function(x){return x.id===id});if(!t)return;el.innerHTML='<input class="ei" value="'+es(t[f]||"")+'" onblur="ce(this,\''+id+"','"+f+'\')" onkeydown="if(event.key===\'Enter\')this.blur()">';el.querySelector("input").focus();el.querySelector("input").select()}
@@ -473,6 +497,35 @@ function rReady(el){
     if(upcoming.length){h+='<b>Committed dates:</b><br>';upcoming.forEach(function(t){var f=flg(t);var warn=f==="over"?' <span style="color:#ef4444">⚠ '+dD(tD(t.target),TD)+'d overdue</span>':f==="slip"?' <span style="color:#f59e0b">⏳ ETA '+fD(t.end)+'</span>':"";h+='&nbsp;&nbsp;• '+es(t.task)+' → <b>'+fD(t.target)+'</b>'+warn+'<br>'});h+='<b>Full capability target: '+fullBy+'</b>'}
     h+='</div></div>';
   });
+  // Render any sections not covered by MODS (dynamically added sections)
+  var coveredWs=[];MODS.forEach(function(m){coveredWs=coveredWs.concat(m.ws)});
+  var allWs=[];S.tasks.forEach(function(t){if(allWs.indexOf(t.ws)<0)allWs.push(t.ws)});
+  var extraWs=allWs.filter(function(w){return coveredWs.indexOf(w)<0});
+  extraWs.forEach(function(wsName){
+    var tasks=S.tasks.filter(function(t){return t.ws===wsName});if(!tasks.length)return;
+    var done=tasks.filter(function(t){return t.status==="Done"}).length,total=tasks.length,pctD=total?Math.round(done/total*100):0;
+    var od=tasks.filter(isOd),sl=tasks.filter(function(t){return!isOd(t)&&isSl(t)});
+    var upcoming=tasks.filter(function(t){return t.status!=="Done"}).sort(function(a,b){return tD(a.target)-tD(b.target)});
+    var fullBy=upcoming.length?fD(upcoming[upcoming.length-1].target):"—";
+    var rl,rb,rf;
+    if(pctD===100){rl="✓ Ready";rb="#dcfce7";rf="#16a34a"}
+    else if(od.length){rl="⚠ Overdue";rb="#fef2f2";rf="#ef4444"}
+    else if(sl.length){rl="⏳ Slipping";rb="#fffbeb";rf="#f59e0b"}
+    else if(tasks.some(function(t){return t.status==="In Progress"})){rl="Building";rb="#dbeafe";rf="#2563eb"}
+    else{rl="Planned";rb="#f1f5f9";rf="#64748b"}
+    var c=WC[wsName]||"#6b7280";
+    var sorted=[].concat(od,sl,tasks.filter(function(t){return t.status==="In Progress"&&od.indexOf(t)<0&&sl.indexOf(t)<0}),tasks.filter(function(t){return t.status==="Not Started"&&od.indexOf(t)<0&&sl.indexOf(t)<0}),tasks.filter(function(t){return t.status==="Done"}));
+    var dn=tasks.filter(function(t){return t.status==="Done"});
+    h+='<div class="rc '+(od.length?"risk":sl.length?"slip":"")+'"><div class="rch"><div class="rcd" style="background:'+c+'"></div><span class="rcn">📌 '+es(wsName)+'</span><span class="rcr" style="background:'+rb+';color:'+rf+'">'+rl+'</span></div>';
+    h+='<div class="rbt"><div class="rbf" style="width:'+pctD+'%;background:'+c+'"></div></div>';
+    h+='<div style="display:flex;justify-content:space-between;font-size:10px;color:#94a3b8;margin-bottom:6px"><span>'+done+'/'+total+' done ('+pctD+'%)</span>'+(od.length?'<span style="color:#ef4444;font-weight:600">'+od.length+' overdue</span>':sl.length?'<span style="color:#f59e0b;font-weight:600">'+sl.length+' slipping</span>':"")+'</div>';
+    h+='<div class="rt">';
+    sorted.forEach(function(t){var f=flg(t),clr=f==="over"?"#ef4444":f==="slip"?"#f59e0b":f==="done"?"#94a3b8":"#475569";var dtxt=f==="done"?"✓ Done":f==="over"?dD(tD(t.target),TD)+"d overdue":f==="slip"?"ETA "+fD(t.end):"target "+fD(t.target);h+='<div class="rti '+(f==="over"?"over":f==="slip"?"slip":f==="done"?"dn":"")+'"><div class="d" style="background:'+SC[t.status]+'"></div><span class="n">'+es(t.task)+'</span><span class="tg" style="color:'+clr+'">'+dtxt+'</span></div>'});
+    h+='</div><div class="rp">';
+    if(dn.length)h+='<b>Can demo today:</b> '+dn.map(function(t){return es(t.task)}).join(", ")+'.<br>';
+    if(upcoming.length){h+='<b>Committed dates:</b><br>';upcoming.forEach(function(t){var f=flg(t);var warn=f==="over"?' <span style="color:#ef4444">⚠ '+dD(tD(t.target),TD)+'d overdue</span>':f==="slip"?' <span style="color:#f59e0b">⏳ ETA '+fD(t.end)+'</span>':"";h+='&nbsp;&nbsp;• '+es(t.task)+' → <b>'+fD(t.target)+'</b>'+warn+'<br>'});h+='<b>Full capability target: '+fullBy+'</b>'}
+    h+='</div></div>';
+  });
   h+='</div>';el.innerHTML=h;
 }
 
@@ -505,6 +558,7 @@ function rTasks(el){
     });
     h+='</tbody></table></div>';
   }
+  h+='<button onclick="addSection()" style="width:100%;padding:10px;font-size:12px;font-weight:500;color:#3b82f6;background:#fff;border:1px dashed #bfdbfe;border-radius:8px;cursor:pointer;font-family:inherit;margin-bottom:12px">+ Add Section / Module</button>';
   h+='<div style="font-size:10px;color:#94a3b8;padding:6px 0;line-height:1.8"><b>Target</b> = committed date. <b>Start/End</b> = current estimate. Double-click to edit. Click status to cycle.<br><span style="display:inline-block;width:10px;height:10px;background:#1e293b;border-radius:1px;vertical-align:middle"></span> = Target marker.</div>';
   el.innerHTML=h;
 }
