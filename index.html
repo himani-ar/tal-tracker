@@ -495,6 +495,8 @@ function aQ(){var mx=Math.max.apply(null,[0].concat(S.questions.map(function(q){
 var _expandedComments={};
 var _collapsedSections={};
 function toggleSection(ws){_collapsedSections[ws]=!_collapsedSections[ws];RR()}
+var _sortByTarget=false;
+function toggleSort(){_sortByTarget=!_sortByTarget;RR()}
 
 function getComments(t){if(!t.comments)t.comments=[];return t.comments}
 function openCommentCount(t){return getComments(t).filter(function(c){return c.status!=="resolved"}).length}
@@ -761,7 +763,7 @@ function rTasks(el){
   var fl=filt==="All"?S.tasks:S.tasks.filter(function(t){return t.ws===filt});var gr={};fl.forEach(function(t){(gr[t.ws]=gr[t.ws]||[]).push(t)});
   var tp=pc(TD);var h="";
   for(var ws in gr){
-    var items=gr[ws].slice().sort(function(a,b){return tD(a.target)-tD(b.target)});
+    var items=_sortByTarget?gr[ws].slice().sort(function(a,b){return tD(a.target)-tD(b.target)}):gr[ws];
     var c=WC[ws]||"#6b7280",done=items.filter(function(t){return t.status==="Done"}).length,pfx=items[0]&&items[0].id?items[0].id.replace(/\d+$/,""):"T";
     var collapsed=_collapsedSections[ws];
     h+='<div class="wg"><div class="wh" style="cursor:pointer" onclick="toggleSection(\''+ws.replace(/'/g,"\\'")+'\')">';
@@ -769,7 +771,7 @@ function rTasks(el){
     h+='<div class="d" style="background:'+c+'"></div><span class="nm">'+ws+'</span><span class="ct">'+done+'/'+items.length+'</span>';
     h+='<button class="ab" onclick="event.stopPropagation();aT(\''+ws.replace(/'/g,"\\'")+'\',\''+pfx+'\')">+ Add</button></div>';
     if(!collapsed){
-    h+='<table class="tt"><thead><tr><th style="width:22px"></th><th>ID</th><th style="min-width:140px">Task</th><th>Owner</th><th>Status</th><th style="width:75px">Target</th><th style="width:140px">Timeline</th><th>Notes</th><th style="width:60px">💬</th></tr></thead><tbody>';
+    h+='<table class="tt"><thead><tr><th style="width:22px"></th><th>ID</th><th style="min-width:140px">Task</th><th>Owner</th><th>Status</th><th style="width:75px;cursor:pointer;user-select:none" onclick="toggleSort()">Target <span style="font-size:8px;color:'+(_sortByTarget?"#3b82f6":"#cbd5e1")+'">'+(_sortByTarget?"▲":"⇅")+'</span></th><th style="width:140px">Timeline</th><th>Notes</th><th style="width:60px">💬</th></tr></thead><tbody>';
     items.forEach(function(t){
       var f=flg(t),s=tD(t.start),e=tD(t.end),tgt=tD(t.target);
       var l=pc(s),r=pc(e),w=Math.max(.8,r-l),tgtPc=pc(tgt);
